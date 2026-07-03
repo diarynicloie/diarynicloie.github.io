@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Diary ni Cloie</title>
+<meta name="theme-color" content="#ffb6c1" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+:root{
+    --pink-bg:#fff0f5;
+    --pink-main:#ffb6c1;
+    --pink-deep:#ff8fab;
+    --pink-dark:#e75480;
+    --pink-line:#ffd6e0;
+    --cream:#fffafc;
+    --card-bg:#ffffff;
+    --text:#5c3a44;
+    --text-soft:#a97d89;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:"Comic Sans MS","Trebuchet MS",Verdana,sans-serif;
+    background:linear-gradient(160deg,#fff0f5,#ffe3ec 60%,#ffd6e0);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    overflow-x:hidden;
+  }
+
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:var(--pink-line); border-radius:10px; }
+  ::-webkit-scrollbar-thumb{ background:var(--pink-deep); border-radius:10px; border:2px solid var(--pink-line); }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--pink-dark); }
+  *{ scrollbar-width:thin; scrollbar-color:var(--pink-deep) var(--pink-line); }
+
+
+  #installBanner{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--pink-dark);
+    color:#fff;
+    padding:10px 16px;
+    font-size:14px;
+    position:sticky;
+    top:0;
+    z-index:200;
+    animation:slideDown .4s ease;
+  }
+  #installBanner button{
+    background:#fff;
+    color:var(--pink-dark);
+    border:none;
+    border-radius:999px;
+    padding:6px 14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  #installBanner button:hover{ transform:scale(1.06); }
+  #installBanner .dismiss{ background:transparent; color:#fff; font-size:18px; padding:0 6px; }
+  @keyframes slideDown{ from{transform:translateY(-100%);opacity:0;} to{transform:translateY(0);opacity:1;} }
+
+
+  header.app-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 18px;
+    background:var(--cream);
+    border-bottom:3px dashed var(--pink-line);
+    position:sticky;
+    top:0;
+    z-index:100;
+  }
+  .logo{
+  width:42px;height:42px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #fff, var(--pink-main) 60%, var(--pink-dark));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:bold;font-size:20px;
+  box-shadow:0 3px 8px rgba(255,140,170,.4);
+  flex-shrink:0;
+  animation:pop .5s ease;
+  overflow:hidden; /* add this */
+}
+.logo img{ width:100%; height:100%; object-fit:cover; } /* add this */
+  header h1{
+    font-size:20px;
+    margin:0;
+    color:var(--pink-dark);
+    letter-spacing:.5px;
+  }
+  header .tagline{ font-size:11px; color:var(--text-soft); margin-top:2px; }
+
+  .search-wrap{ padding:12px 18px; background:var(--pink-bg); }
+  .search-box{
+    display:flex;align-items:center;gap:8px;
+    background:#fff;
+    border:2px solid var(--pink-line);
+    border-radius:999px;
+    padding:8px 16px;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .search-box:focus-within{ border-color:var(--pink-deep); box-shadow:0 0 0 4px rgba(255,182,193,.35); }
+  .search-box input{
+    border:none;outline:none;flex:1;font-size:14px;background:transparent;color:var(--text);
+    font-family:inherit;
+  }
+  .search-box svg{ flex-shrink:0; }
+
+  main{ flex:1; padding:12px 18px 90px; max-width:640px; margin:0 auto; width:100%; }
+
+  .actions{ display:flex; gap:10px; margin:8px 0 18px; }
+  .filter-section{ margin-bottom:16px; }
+.filter-title{
+  font-size:15px;
+  font-weight:bold;
+  color:var(--pink-dark);
+  margin-bottom:8px;
+}
+.filter-actions{ display:flex; gap:10px; }
+.filter-actions .btn{ flex:none; padding:10px 16px; font-size:13px; }
+.hidden-month-input{
+  position:absolute;
+  width:0; height:0;
+  opacity:0;
+  pointer-events:none;
+}
+  
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:16px;
+    padding:14px 10px;
+    font-weight:bold;
+    font-size:14px;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform .15s ease, box-shadow .15s ease;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .btn:active{ transform:scale(.95); }
+  .btn:hover{ transform:translateY(-2px); }
+  .btn-primary{ background:var(--pink-deep); color:#fff; box-shadow:0 4px 10px rgba(255,143,171,.5); }
+  .btn-secondary{ background:#fff; color:var(--pink-dark); border:2px solid var(--pink-main); }
+  .btn-ghost{ background:transparent; color:var(--pink-dark); border:2px dashed var(--pink-main); }
+  .btn-block{ width:100%; }
+
+
+  #diaryList{ display:flex; flex-direction:column; gap:12px; max-height:60vh; overflow-y:auto; padding-right:4px; }
+.diary-card{
+    background:var(--card-bg);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    border:2px solid var(--pink-line);
+    cursor:pointer;
+    animation:pop .35s ease;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .2s ease;
+  }
+  .diary-card:hover{ transform:translateY(-3px); box-shadow:0 8px 16px rgba(255,143,171,.25); border-color:var(--pink-deep); }
+  .diary-card h3{ margin:0 0 4px; color:var(--pink-dark); font-size:16px; }
+  .diary-card .meta{ font-size:12px; color:var(--text-soft); }
+  .diary-card p.preview{ margin:8px 0 0; font-size:13px; color:var(--text); white-space:pre-wrap; max-height:38px; overflow:hidden; }
+  .horo-card-wrap{ margin-bottom:16px; }
+.horo-card{
+  background:linear-gradient(135deg,var(--card-bg),var(--pink-bg));
+  border:2px solid var(--pink-line);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  cursor:pointer;
+  animation:pop .35s ease;
+  transition:transform .15s ease, box-shadow .15s ease, background .2s ease;
+}
+.horo-card:hover{ transform:translateY(-2px); box-shadow:0 8px 16px rgba(255,143,171,.25); }
+.horo-sign{ font-weight:bold; color:var(--pink-dark); margin-bottom:4px; font-size:15px; }
+.horo-text{ margin:0; font-size:13px; color:var(--text); line-height:1.5; }
+.horo-setup{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--card-bg); border:2px dashed var(--pink-main); border-radius:var(--radius);
+  padding:12px 16px; font-size:13px; color:var(--text);
+  transition:background .2s ease;
+}
+  .empty-state{ text-align:center; padding:40px 10px; color:var(--text-soft); }
+  .empty-state .big{ font-size:40px; }
+
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:13px; font-weight:bold; color:var(--pink-dark); margin-bottom:6px; }
+.field input[type=text], .field textarea{
+    width:100%;
+    background:var(--card-bg);
+    border:2px solid var(--pink-line);
+    border-radius:14px;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--text);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    resize:vertical;
+  }
+  .field textarea{ white-space:pre-wrap; min-height:220px; max-height:55vh; overflow-y:auto; line-height:1.5; }
+  .field input:focus, .field textarea:focus{ border-color:var(--pink-deep); box-shadow:0 0 0 4px rgba(255,182,193,.3); }
+
+
+  .viewer-content{ white-space:pre-wrap; line-height:1.6; max-height:55vh; overflow-y:auto; padding-right:6px; font-size:14.5px; }
+
+
+  .screen{ animation:fadeUp .35s ease; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes pop{ from{opacity:0; transform:scale(.9);} to{opacity:1; transform:scale(1);} }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(92,58,68,.35);
+    display:none; align-items:flex-end; justify-content:center; z-index:300;
+    animation:fadeUp .2s ease;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-sheet{
+    background:var(--cream);
+    width:100%; max-width:640px;
+    border-radius:24px 24px 0 0;
+    padding:20px 20px 26px;
+    animation:slideUp .3s ease;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  @keyframes slideUp{ from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  .modal-close{ float:right; border:none; background:var(--pink-line); border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:16px; color:var(--pink-dark); }
+  
+  .confirm-overlay{
+  position:fixed; inset:0; background:rgba(92,58,68,.45);
+  display:none; align-items:center; justify-content:center; z-index:500;
+  padding:20px;
+  animation:fadeUp .2s ease;
+}
+.confirm-overlay.show{ display:flex; }
+.confirm-card{
+  background:var(--cream);
+  border-radius:24px;
+  border:3px solid var(--pink-line);
+  padding:26px 22px;
+  max-width:340px; width:100%;
+  text-align:center;
+  box-shadow:0 14px 30px rgba(255,143,171,.35);
+  animation:pop .3s ease;
+}
+.confirm-icon{ font-size:36px; margin-bottom:10px; }
+.confirm-title{ color:var(--pink-dark); font-size:17px; font-weight:bold; margin:0 0 8px; }
+.confirm-message{ color:var(--text-soft); font-size:13px; margin:0 0 20px; line-height:1.5; }
+.confirm-actions{ display:flex; gap:10px; }
+.confirm-actions .btn{ padding:12px 10px; font-size:13px; }
+
+  .center-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+.auth-card{
+    background:var(--card-bg); border-radius:26px; padding:32px 26px; max-width:380px; width:100%;
+    text-align:center; box-shadow:0 12px 30px rgba(255,143,171,.3); border:3px solid var(--pink-line);
+    animation:pop .4s ease;
+  }
+  .auth-card .logo{ margin:0 auto 12px; width:60px; height:60px; font-size:26px; }
+  .auth-card h1{ color:var(--pink-dark); margin:0 0 4px; font-size:22px; }
+  .auth-card p{ color:var(--text-soft); font-size:13px; margin-bottom:20px; }
+  .code-display{
+    background:var(--pink-bg); border:2px dashed var(--pink-deep); border-radius:14px;
+    padding:14px; font-size:20px; letter-spacing:2px; font-weight:bold; color:var(--pink-dark);
+    margin:14px 0; word-break:break-all;
+  }
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--pink-dark); color:#fff; padding:10px 20px; border-radius:999px;
+    font-size:13px; opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease; z-index:400;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+  .spinner{ width:18px;height:18px;border:3px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+
+/* ---------- password modal ---------- */
+  .password-modal-overlay{
+    position:fixed; inset:0; background:rgba(92,58,68,.45);
+    display:none; align-items:center; justify-content:center; z-index:600;
+    padding:20px;
+    animation:fadeUp .2s ease;
+  }
+  .password-modal-overlay.show{ display:flex; }
+  .password-card{
+    background:var(--cream);
+    border-radius:24px;
+    border:3px solid var(--pink-line);
+    padding:26px 22px;
+    max-width:340px; width:100%;
+    text-align:center;
+    box-shadow:0 14px 30px rgba(255,143,171,.35);
+    animation:pop .3s ease;
+  }
+  .password-card .icon{ font-size:36px; margin-bottom:10px; }
+  .password-card h3{ color:var(--pink-dark); font-size:17px; font-weight:bold; margin:0 0 6px; }
+  .password-card p{ color:var(--text-soft); font-size:13px; margin:0 0 16px; line-height:1.5; }
+  .password-input-wrap{
+    position:relative;
+    margin-bottom:14px;
+  }
+.password-input-wrap input{
+    width:100%;
+    background:var(--card-bg);
+    border:2px solid var(--pink-line);
+    border-radius:14px;
+    padding:12px 42px 12px 14px;
+    font-family:inherit;
+    font-size:15px;
+    color:var(--text);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    letter-spacing:2px;
+  }
+  .password-input-wrap input:focus{
+    border-color:var(--pink-deep);
+    box-shadow:0 0 0 4px rgba(255,182,193,.3);
+  }
+  .toggle-pw{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; font-size:18px; padding:0;
+    color:var(--text-soft);
+  }
+  .pw-error{
+    color:var(--pink-dark);
+    font-size:12px;
+    margin:-8px 0 10px;
+    min-height:16px;
+    text-align:left;
+  }
+  .password-actions{ display:flex; gap:10px; }
+  .password-actions .btn{ padding:12px 10px; font-size:13px; }
+
+
+  .security-section{
+    text-align:center;
+    padding:8px 0 4px;
+  }
+  .security-section a{
+    color:var(--text-soft);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .lock-badge{
+    display:inline-block;
+    font-size:11px;
+    background:var(--pink-line);
+    color:var(--pink-dark);
+    border-radius:999px;
+    padding:2px 8px;
+    margin-left:6px;
+    font-weight:bold;
+    vertical-align:middle;
+  }
+
+  .hidden{ display:none !important; }
+  .logout-link{ text-align:center; margin-top:16px; }
+  .logout-link a{ color:var(--text-soft); font-size:12px; cursor:pointer; text-decoration:underline; }
+  
+
+  body.dark-mode{
+    --pink-bg:#241a1e;
+    --pink-main:#7a4a56;
+    --pink-deep:#c96b83;
+    --pink-dark:#ffb6c1;
+    --pink-line:#3a2a30;
+    --cream:#2b2024;
+    --card-bg:#332128;
+    --text:#f3dce2;
+    --text-soft:#c99aa5;
+  }
+  body.dark-mode{
+    background:linear-gradient(160deg,#1c1417,#241a1e 60%,#2b1f24);
+  }
+  body.dark-mode .diary-card,
+  body.dark-mode .horo-card,
+  body.dark-mode .auth-card,
+  body.dark-mode .confirm-card,
+  body.dark-mode .password-card{
+    box-shadow:0 8px 16px rgba(0,0,0,.35);
+  }
+
+  .theme-toggle{
+    margin-left:auto;
+    width:40px;height:40px;
+    border-radius:50%;
+    border:2px solid var(--pink-line);
+    background:var(--pink-bg);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    font-size:17px;
+    flex-shrink:0;
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .theme-toggle:hover{ transform:scale(1.08); }
+  .theme-toggle:active{ transform:scale(.92); }
+
+  @media (min-width:700px){
+    header h1{ font-size:24px; }
+    main{ padding-top:20px; }
+    #diaryList{ max-height:65vh; }
+  }
+</style>
+</head>
+<body>
+
+
+<div id="installBanner">
+  <span>🌸 Install Diary ni Cloie on your device for the cutest experience!</span>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button id="installBtn">Install</button>
+    <button class="dismiss" id="dismissBanner">✕</button>
+  </div>
+</div>
+
+
+<div id="authScreen" class="center-wrap">
+  <div class="auth-card">
+<div class="logo"><img src="icon-512.png" alt="Diary ni Cloie logo" /></div>
+    <h1>Diary ni Cloie</h1>
+    <p>Your soft little corner for daily stories 🌷</p>
+
+    <div id="authChoice">
+      <button class="btn btn-primary btn-block" id="showGenerate" style="margin-bottom:10px;">✨ Generate a new code</button>
+      <button class="btn btn-secondary btn-block" id="showEnter">🔑 I already have a code</button>
+    </div>
+
+<div id="generatePanel" class="hidden">
+      <div style="background:var(--pink-bg); border:2px dashed var(--pink-dark); border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:12.5px; color:var(--pink-dark); text-align:left; line-height:1.5;">
+        ⚠️ <strong>Important:</strong> The code you're about to generate is your <strong>only password</strong> to this diary. Please <strong>write it down on paper or save it somewhere safe</strong> (notes app, screenshot, etc). If you lose it, there is <strong>no way to recover</strong> your diary.
+      </div>
+      <button class="btn btn-primary btn-block" id="genCodeBtn">Generate my code</button>
+      <div id="codeResult" class="hidden">
+        <div class="code-display" id="newCode"></div>
+        <button class="btn btn-secondary btn-block" id="copyCodeBtn" style="margin-bottom:8px;">Copy code</button>
+        <button class="btn btn-primary btn-block" id="continueWithCode">I saved it — continue 💗</button>
+      </div>
+      <div class="logout-link"><a id="backFromGenerate">← back</a></div>
+    </div>
+
+    <div id="enterPanel" class="hidden">
+      <div class="field" style="text-align:left;">
+        <label>Your access code</label>
+        <input type="text" id="enterCodeInput" placeholder="e.g. CLOIE-XXXX-XXXX" />
+      </div>
+      <button class="btn btn-primary btn-block" id="enterCodeBtn">Enter my diary</button>
+      <div class="logout-link"><a id="backFromEnter">← back</a></div>
+    </div>
+  </div>
+</div>
+
+
+<div id="appScreen" class="hidden">
+<header class="app-header">
+<div class="logo"><img src="icon-512.png" alt="Diary ni Cloie logo" /></div>
+    <div>
+      <h1>Diary ni Cloie</h1>
+      <div class="tagline">a soft place for your everyday stories</div>
+    </div>
+    <button class="theme-toggle" id="themeToggleBtn" aria-label="Toggle dark mode">🌙</button>
+  </header>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff8fab" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search your diary titles..." />
+    </div>
+  </div>
+
+<main>
+    <div id="horoscopeCard" class="horo-card-wrap"></div>
+
+<div class="actions">
+      <button class="btn btn-primary" id="createDiaryBtn">📝 Create Diary</button>
+      <button class="btn btn-secondary" id="horoscopeBtn">🔮 Horoscope</button>
+    </div>
+
+    <div class="filter-section" id="filterSection">
+      <div class="filter-title hidden" id="filterTitle"></div>
+      <div class="filter-actions">
+        <button class="btn btn-secondary" id="selectMonthBtn">📅 Select Month &amp; Year</button>
+        <button class="btn btn-ghost hidden" id="clearFilterBtn">✕ Clear</button>
+      </div>
+      <input type="month" id="monthYearInput" class="hidden-month-input" />
+    </div>
+
+    <div id="listScreen" class="screen">
+      <div id="diaryList"></div>
+    </div>
+  </main>
+
+  <div class="security-section">
+    <a id="securityBtn">🔒 <span id="securityBtnLabel">set a delete password</span><span class="lock-badge hidden" id="lockBadge">protected</span></a>
+  </div>
+  <div class="logout-link" style="padding-bottom:20px;"><a id="logoutBtn">🚪 log out of this code</a></div>
+</div>
+
+
+<div class="modal-overlay" id="createModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeCreateModal">✕</button>
+    <h2 style="color:var(--pink-dark);margin-top:6px;">New diary entry 🌸</h2>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="diaryTitleInput" placeholder="Give today a title..." />
+    </div>
+    <div class="field">
+      <label>Your story</label>
+      <textarea id="diaryContentInput" placeholder="Write about your day, exactly how you want to say it..."></textarea>
+    </div>
+    <button class="btn btn-primary btn-block" id="saveDiaryBtn">💾 Save diary</button>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="viewModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeViewModal">✕</button>
+    <h2 id="viewTitle" style="color:var(--pink-dark);margin-top:6px;"></h2>
+    <div class="meta" id="viewMeta" style="margin-bottom:14px;color:var(--text-soft);font-size:12px;"></div>
+    <div class="viewer-content" id="viewContent"></div>
+    <button class="btn btn-ghost btn-block" id="deleteDiaryBtn" style="margin-top:16px;">🗑 delete this diary</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="horoscopeModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeHoroscopeModal">✕</button>
+    <div id="horoscopeModalBody"></div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card">
+    <div class="confirm-icon" id="confirmIcon">🗑️</div>
+    <h3 class="confirm-title" id="confirmTitle">Delete this diary?</h3>
+    <p class="confirm-message" id="confirmMessage">This can't be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" id="confirmCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="confirmOkBtn">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="password-modal-overlay" id="passwordModal">
+  <div class="password-card">
+    <div class="icon" id="pwModalIcon">🔒</div>
+    <h3 id="pwModalTitle">Enter your password</h3>
+    <p id="pwModalDesc">This action is protected. Please enter your diary password to continue.</p>
+    <div class="password-input-wrap">
+      <input type="password" id="pwModalInput" placeholder="Your password..." autocomplete="off" />
+      <button class="toggle-pw" id="pwModalToggle" tabindex="-1">👁</button>
+    </div>
+    <div class="pw-error" id="pwModalError"></div>
+    <div class="password-actions">
+      <button class="btn btn-secondary" id="pwModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="pwModalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="password-modal-overlay" id="setPasswordModal">
+  <div class="password-card">
+    <div class="icon" id="setPwIcon">🔐</div>
+    <h3 id="setPwTitle">Set a password</h3>
+    <p id="setPwDesc">This password will be required before deleting any diary entry.</p>
+
+    <div id="setPwFields">
+      <div class="password-input-wrap">
+        <input type="password" id="setPwInput" placeholder="New password..." autocomplete="new-password" />
+        <button class="toggle-pw" id="setPwToggle" tabindex="-1">👁</button>
+      </div>
+      <div class="password-input-wrap">
+        <input type="password" id="setPwConfirmInput" placeholder="Confirm password..." autocomplete="new-password" />
+        <button class="toggle-pw" id="setPwConfirmToggle" tabindex="-1">👁</button>
+      </div>
+      <div class="pw-error" id="setPwError"></div>
+      <div class="password-actions">
+        <button class="btn btn-secondary" id="setPwCancel">Cancel</button>
+        <button class="btn btn-primary" id="setPwSave">Save password</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBfMvewkVHpczT7x1E7YduIBO7YSCeH8Go",
+  authDomain: "diary-ni-cloie.firebaseapp.com",
+  projectId: "diary-ni-cloie",
+  storageBucket: "diary-ni-cloie.firebasestorage.app",
+  messagingSenderId: "940233692097",
+  appId: "1:940233692097:web:788c384b3f8e97a45ad540"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+
+const $ = (id) => document.getElementById(id);
+
+
+function applyTheme(theme){
+  if(theme === "dark"){
+    document.body.classList.add("dark-mode");
+    $("themeToggleBtn").textContent = "☀️";
+  } else {
+    document.body.classList.remove("dark-mode");
+    $("themeToggleBtn").textContent = "🌙";
+  }
+}
+
+function initTheme(){
+  const saved = localStorage.getItem("diaryTheme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const theme = saved || (prefersDark ? "dark" : "light");
+  applyTheme(theme);
+}
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2200);
+}
+function generateCode(){
+  const seg = () => Math.random().toString(36).substring(2,6).toUpperCase();
+  return `CLOIE-${seg()}-${seg()}`;
+}
+
+
+function showConfirm({ icon="🗑️", title="Are you sure?", message="This can't be undone.", okText="Yes, continue" }){
+  return new Promise((resolve) => {
+    $("confirmIcon").textContent = icon;
+    $("confirmTitle").textContent = title;
+    $("confirmMessage").textContent = message;
+    $("confirmOkBtn").textContent = okText;
+    $("confirmOverlay").classList.add("show");
+
+    const cleanup = (result) => {
+      $("confirmOverlay").classList.remove("show");
+      $("confirmOkBtn").onclick = null;
+      $("confirmCancelBtn").onclick = null;
+      resolve(result);
+    };
+    $("confirmOkBtn").onclick = () => cleanup(true);
+    $("confirmCancelBtn").onclick = () => cleanup(false);
+  });
+}
+
+
+let currentCode = localStorage.getItem("diaryCode") || null;
+let allDiaries = [];
+let userProfile = { birthday: null, zodiacSign: null };
+let lastKnownDate = "";
+let selectedMonthYear = null; // "YYYY-MM" or null
+let searchQuery = "";
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+
+const ZODIAC_EMOJI = {
+  Aries:"♈", Taurus:"♉", Gemini:"♊", Cancer:"♋", Leo:"♌", Virgo:"♍",
+  Libra:"♎", Scorpio:"♏", Sagittarius:"♐", Capricorn:"♑", Aquarius:"♒", Pisces:"♓"
+};
+const ZODIAC_TRAITS = {
+  Aries:"bold", Taurus:"steady", Gemini:"curious", Cancer:"caring", Leo:"confident",
+  Virgo:"careful", Libra:"fair-minded", Scorpio:"intense", Sagittarius:"adventurous",
+  Capricorn:"disciplined", Aquarius:"independent", Pisces:"intuitive"
+};
+
+const HOROSCOPE_OPENERS = [
+  "The energy around you feels a little different today.",
+  "Today carries a quiet kind of momentum.",
+  "There's a gentle shift happening beneath the surface.",
+  "Something small today could turn into something meaningful.",
+  "The day opens with more clarity than you expect.",
+  "A little patience will go a long way today.",
+  "You might notice your mood shifting more than usual.",
+  "Today feels like a good day to trust your gut.",
+  "Your heart feels a bit more open today than usual.",
+  "There's a flutter of nervous energy following you around today.",
+  "Today asks you to be softer with yourself than usual.",
+  "You're carrying more than you're letting on, and that's okay.",
+  "Something today will test your patience before it rewards it.",
+  "The people around you can sense your mood more than you think.",
+  "Today isn't about big moves — it's about small honesty.",
+  "You may feel torn between what you want and what's easy.",
+  "There's a bittersweet feeling hanging around you today.",
+  "Today rewards the version of you that shows up anyway.",
+  "You might catch yourself thinking about someone more than planned.",
+  "A wave of nostalgia could catch you off guard today.",
+  "Today feels heavier than it needs to — go easy on yourself.",
+  "There's a quiet hope building underneath the stress today.",
+  "You're more perceptive today than people give you credit for.",
+  "Today might bring a mix of butterflies and doubt.",
+  "Something you've been pushing down may ask to be felt today.",
+  "You have more strength today than you're giving yourself credit for.",
+  "Today's challenges are smaller than they feel right now.",
+  "There's a soft kind of bravery in just getting through today."
+];
+const HOROSCOPE_FOCUS = [
+  "In matters of the heart, honesty will serve you better than silence.",
+  "At work or school, a small win is more likely than a big one — and that's okay.",
+  "A conversation you've been avoiding might finally feel easier to start.",
+  "Your relationships benefit most from listening today, not fixing.",
+  "Money matters ask for a second look before any decision.",
+  "Your energy is better spent on one thing done well than five things half-done.",
+  "An old worry may resurface, but it doesn't need an answer today.",
+  "Someone close to you needs your attention more than they'll admit.",
+  "That person on your mind might be thinking about you too, even if they haven't said it.",
+  "A crush can feel like proof and confusion at the same time — let it be both for now.",
+  "If someone has been distant lately, it likely has nothing to do with you.",
+  "Butterflies are a sign you're paying attention, not a sign you have to act yet.",
+  "The person you like may need more time to figure out their own feelings first.",
+  "A small, brave text today could change more than you expect.",
+  "Not every crush needs a confession — sometimes just noticing the feeling is enough.",
+  "If your heart has been quiet lately, that's not a bad sign, just a resting one.",
+  "Someone you've been overthinking about is probably overthinking too.",
+  "A past heartbreak still teaches you something today, whether you want it to or not.",
+  "It's okay to want to be chosen — that doesn't make you needy, it makes you human.",
+  "The hard thing you're avoiding will feel lighter the moment you start it.",
+  "A financial worry today is more manageable than it feels at 2am.",
+  "You don't have to have life figured out today — just the next small step.",
+  "Family tension may surface, but it doesn't have to be solved in one conversation.",
+  "A friendship that feels one-sided lately deserves an honest check-in.",
+  "You're allowed to grieve something even if other people think you should be over it by now.",
+  "Today's stress is temporary, even when it doesn't feel that way.",
+  "Comparing your journey to someone else's will only slow you down today.",
+  "A tiring week doesn't mean you're failing — it means you're due for rest.",
+  "If you've been rejected recently, it says more about timing than about your worth.",
+  "Loneliness today isn't permanent — it's just loud right now.",
+  "The apology you're waiting for might not come, and you can still move forward.",
+  "A small act of self-forgiveness today will do more than another day of guilt.",
+  "Someone's silence isn't always rejection — sometimes it's just their own struggle.",
+  "You might feel like giving up on something today — don't decide anything permanent while tired.",
+  "A crush fading is disappointing, but it clears space for something more real later.",
+  "Money stress eases the moment you write down the actual numbers instead of guessing.",
+  "The people who truly care about you are more patient with you than you are with yourself.",
+  "A hard conversation you keep delaying will get easier the sooner you start it.",
+  "Feeling behind in life is common — almost everyone feels it quietly.",
+  "If your crush hasn't noticed you yet, it doesn't mean they never will.",
+  "A breakup, even an old one, can still ache on random days — that's normal.",
+  "Today, your effort matters more than your results.",
+  "Someone from your past may cross your mind — you don't have to reach out unless you want to.",
+  "Struggles at school or work today are more about pressure than about your ability.",
+  "You're allowed to want love and still be complete without it right now.",
+  "A tough week doesn't cancel out the good ones before it.",
+  "If you're scared to like someone again after getting hurt, that's caution, not weakness.",
+  "Today, the hardest part is starting — the rest gets easier once you do."
+];
+const HOROSCOPE_ADVICE = [
+  "Lean into your {trait} side — it's exactly what today calls for.",
+  "Let your {trait} nature guide you instead of overthinking it.",
+  "Trust the {trait} instinct that's been quietly right before.",
+  "Today rewards your {trait} energy more than your patience.",
+  "Your {trait} streak is an asset today, not a flaw.",
+  "Give your {trait} side permission to lead, just for today.",
+  "A little bit of your {trait} spirit will fix more than you think.",
+  "Today, being {trait} isn't a bug — it's the plan.",
+  "Let your {trait} instincts handle today's heavy feelings — they've carried you before.",
+  "Being {trait} today means being gentle with yourself first.",
+  "Your {trait} side knows how to survive hard days — trust it.",
+  "Today, let your {trait} nature choose comfort over pressure.",
+  "A little {trait} courage is all today's conversation needs.",
+  "Your {trait} energy is enough, even on a slow day.",
+  "Let your {trait} instincts decide who deserves your energy today.",
+  "Today, your {trait} nature is your best defense against overthinking.",
+  "Being {trait} doesn't mean having it all figured out — it means showing up anyway.",
+  "Your {trait} side is exactly what today's crush, worry, or workload needs.",
+  "Let your {trait} nature remind you that rest is productive too.",
+  "Today, your {trait} energy is better spent on yourself than on people-pleasing.",
+  "A {trait} heart heals slower, but it heals stronger.",
+  "Your {trait} instincts are right more often than your doubts are.",
+  "Being {trait} today looks like patience, not perfection.",
+  "Let your {trait} side handle the hard parts — it's tougher than you think.",
+  "Your {trait} nature makes today's stress smaller than it feels.",
+  "Today, lean on your {trait} streak to get through, not to get it perfect.",
+  "A {trait} person like you doesn't need every answer today — just the next step.",
+  "Your {trait} instinct to keep going is exactly the right one today."
+];
+
+function hashString(str){
+  let hash = 0;
+  for(let i=0;i<str.length;i++){
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getTodayDateStr(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,"0");
+  const d = String(now.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+
+function getZodiacSign(month, day){
+  const ranges = [
+    ["Aquarius",1,20,2,18], ["Pisces",2,19,3,20], ["Aries",3,21,4,19],
+    ["Taurus",4,20,5,20], ["Gemini",5,21,6,20], ["Cancer",6,21,7,22],
+    ["Leo",7,23,8,22], ["Virgo",8,23,9,22], ["Libra",9,23,10,22],
+    ["Scorpio",10,23,11,21], ["Sagittarius",11,22,12,21], ["Capricorn",12,22,12,31],
+    ["Capricorn",1,1,1,19]
+  ];
+  for(const [name,m1,d1,m2,d2] of ranges){
+    if((month===m1 && day>=d1) || (month===m2 && day<=d2)) return name;
+  }
+  return "Capricorn";
+}
+
+function getDailyHoroscope(signName, dateStr){
+  const trait = ZODIAC_TRAITS[signName] || "unique";
+  const seedBase = dateStr + "-" + signName + "-" + (currentCode || "guest");
+  const opener = HOROSCOPE_OPENERS[ hashString(seedBase+"-opener") % HOROSCOPE_OPENERS.length ];
+  const focus = HOROSCOPE_FOCUS[ hashString(seedBase+"-focus") % HOROSCOPE_FOCUS.length ];
+  const advice = HOROSCOPE_ADVICE[ hashString(seedBase+"-advice") % HOROSCOPE_ADVICE.length ].replace("{trait}", trait);
+  return `${opener} ${focus} ${advice}`;
+}
+
+async function loadUserProfile(){
+  try{
+    const doc = await db.collection("users").doc(currentCode).get();
+    const data = doc.data() || {};
+    if(data.birthday && data.zodiacSign){
+      userProfile.birthday = data.birthday;
+      userProfile.zodiacSign = data.zodiacSign;
+    }
+  }catch(e){
+    console.error(e);
+  }
+  renderHoroscopeCard();
+}
+
+async function saveBirthday(dateValue){
+  const [y,m,d] = dateValue.split("-").map(Number);
+  const signName = getZodiacSign(m, d);
+  try{
+    await db.collection("users").doc(currentCode).set({
+      birthday: dateValue,
+      zodiacSign: signName
+    }, { merge:true });
+    userProfile.birthday = dateValue;
+    userProfile.zodiacSign = signName;
+    renderHoroscopeCard();
+    toast("Horoscope set up! 🔮");
+    return true;
+  }catch(e){
+    console.error(e);
+    toast("Couldn't save 😢 check your connection");
+    return false;
+  }
+}
+
+function renderHoroscopeCard(){
+  const card = $("horoscopeCard");
+  if(!userProfile.zodiacSign){
+    card.innerHTML = `
+      <div class="horo-setup">
+        <span>🔮 Set up your daily horoscope</span>
+        <button class="btn btn-secondary" id="horoSetupBtn">Set up</button>
+      </div>`;
+    $("horoSetupBtn").onclick = () => openHoroscopeModal(false);
+    return;
+  }
+  const today = getTodayDateStr();
+  const reading = getDailyHoroscope(userProfile.zodiacSign, today);
+  const emoji = ZODIAC_EMOJI[userProfile.zodiacSign] || "🔮";
+  card.innerHTML = `
+    <div class="horo-card" id="horoCardClickable">
+      <div class="horo-sign">${emoji} ${userProfile.zodiacSign} · Today</div>
+      <p class="horo-text">${reading}</p>
+    </div>`;
+  $("horoCardClickable").onclick = () => openHoroscopeModal(false);
+}
+
+function openHoroscopeModal(forceEdit){
+  const body = $("horoscopeModalBody");
+  const needsSetup = !userProfile.zodiacSign || forceEdit;
+
+  if(needsSetup){
+    body.innerHTML = `
+      <h2 style="color:var(--pink-dark);margin-top:6px;">Set up your horoscope 🔮</h2>
+      <p style="color:var(--text-soft);font-size:13px;">Enter your birthday and we'll figure out your sign.</p>
+      <div class="field">
+        <label>Your birthday</label>
+        <input type="date" id="birthdayInput" value="${userProfile.birthday || ''}" />
+      </div>
+      <button class="btn btn-primary btn-block" id="saveBirthdayBtn">Save & reveal my sign</button>
+    `;
+    $("saveBirthdayBtn").onclick = async () => {
+      const val = $("birthdayInput").value;
+      if(!val){ toast("Please pick a date"); return; }
+      $("saveBirthdayBtn").disabled = true;
+      $("saveBirthdayBtn").textContent = "Saving...";
+      const ok = await saveBirthday(val);
+      if(ok) $("horoscopeModal").classList.remove("show");
+      $("saveBirthdayBtn").disabled = false;
+      $("saveBirthdayBtn").textContent = "Save & reveal my sign";
+    };
+  } else {
+    const today = getTodayDateStr();
+    const reading = getDailyHoroscope(userProfile.zodiacSign, today);
+    const emoji = ZODIAC_EMOJI[userProfile.zodiacSign] || "🔮";
+    body.innerHTML = `
+      <h2 style="color:var(--pink-dark);margin-top:6px;">${emoji} ${userProfile.zodiacSign}</h2>
+      <div class="meta" style="margin-bottom:14px;color:var(--text-soft);font-size:12px;">Today's reading</div>
+      <div class="viewer-content">${reading}</div>
+      <button class="btn btn-ghost btn-block" id="changeBirthdayBtn" style="margin-top:16px;">✏️ change my birthday</button>
+    `;
+    $("changeBirthdayBtn").onclick = () => openHoroscopeModal(true);
+  }
+  $("horoscopeModal").classList.add("show");
+}
+
+function startHoroscopeMidnightWatcher(){
+  lastKnownDate = getTodayDateStr();
+  setInterval(() => {
+    const today = getTodayDateStr();
+    if(today !== lastKnownDate){
+      lastKnownDate = today;
+      renderHoroscopeCard();
+    }
+  }, 60000);
+}
+
+
+async function hashPassword(raw){
+  const encoded = new TextEncoder().encode(raw + "CLOIE_DIARY_SALT_2024");
+  const buf = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+
+let storedPasswordHash = null;
+
+async function loadPasswordHash(){
+  try{
+    const doc = await db.collection("users").doc(currentCode).get();
+    const data = doc.data() || {};
+    storedPasswordHash = data.passwordHash || null;
+    updateSecurityUI();
+  }catch(e){
+    console.error(e);
+  }
+}
+
+function updateSecurityUI(){
+  const label = $("securityBtnLabel");
+  const badge = $("lockBadge");
+  if(storedPasswordHash){
+    label.textContent = "change delete password";
+    badge.classList.remove("hidden");
+  } else {
+    label.textContent = "set a delete password";
+    badge.classList.add("hidden");
+  }
+}
+
+
+function setupToggle(btnId, inputId){
+  $(btnId).onclick = () => {
+    const inp = $(inputId);
+    if(inp.type === "password"){
+      inp.type = "text";
+      $(btnId).textContent = "🙈";
+    } else {
+      inp.type = "password";
+      $(btnId).textContent = "👁";
+    }
+  };
+}
+setupToggle("pwModalToggle", "pwModalInput");
+setupToggle("setPwToggle", "setPwInput");
+setupToggle("setPwConfirmToggle", "setPwConfirmInput");
+
+
+function askPassword({ icon="🔒", title="Enter your password", desc="This action is protected." }){
+  return new Promise((resolve) => {
+    $("pwModalIcon").textContent = icon;
+    $("pwModalTitle").textContent = title;
+    $("pwModalDesc").textContent = desc;
+    $("pwModalInput").value = "";
+    $("pwModalInput").type = "password";
+    $("pwModalToggle").textContent = "👁";
+    $("pwModalError").textContent = "";
+    $("passwordModal").classList.add("show");
+
+    setTimeout(() => $("pwModalInput").focus(), 100);
+
+    const cleanup = (result) => {
+      $("passwordModal").classList.remove("show");
+      $("pwModalConfirm").onclick = null;
+      $("pwModalCancel").onclick = null;
+      $("pwModalInput").onkeydown = null;
+      resolve(result);
+    };
+
+    const tryConfirm = async () => {
+      const raw = $("pwModalInput").value;
+      if(!raw){ $("pwModalError").textContent = "Please enter your password 🥺"; return; }
+      $("pwModalConfirm").disabled = true;
+      $("pwModalConfirm").textContent = "Checking...";
+      const hash = await hashPassword(raw);
+      $("pwModalConfirm").disabled = false;
+      $("pwModalConfirm").textContent = "Confirm";
+      if(hash === storedPasswordHash){
+        $("pwModalError").textContent = "";
+        cleanup(true);
+      } else {
+        $("pwModalError").textContent = "Wrong password 🥺 try again";
+        $("pwModalInput").value = "";
+        $("pwModalInput").focus();
+      }
+    };
+
+    $("pwModalConfirm").onclick = tryConfirm;
+    $("pwModalCancel").onclick = () => cleanup(false);
+    $("pwModalInput").onkeydown = (e) => { if(e.key === "Enter") tryConfirm(); };
+  });
+}
+
+
+function openSetPasswordModal(){
+  $("setPwInput").value = "";
+  $("setPwConfirmInput").value = "";
+  $("setPwInput").type = "password";
+  $("setPwConfirmInput").type = "password";
+  $("setPwToggle").textContent = "👁";
+  $("setPwConfirmToggle").textContent = "👁";
+  $("setPwError").textContent = "";
+
+  if(storedPasswordHash){
+    $("setPwIcon").textContent = "🔑";
+    $("setPwTitle").textContent = "Change your password";
+    $("setPwDesc").textContent = "Enter a new password to replace your current one.";
+  } else {
+    $("setPwIcon").textContent = "🔐";
+    $("setPwTitle").textContent = "Set a delete password";
+    $("setPwDesc").textContent = "This password will be required before deleting any diary entry.";
+  }
+
+  $("setPasswordModal").classList.add("show");
+  setTimeout(() => $("setPwInput").focus(), 100);
+}
+
+$("setPwCancel").onclick = () => $("setPasswordModal").classList.remove("show");
+
+$("setPwSave").onclick = async () => {
+  const pw = $("setPwInput").value;
+  const pw2 = $("setPwConfirmInput").value;
+
+  if(!pw){ $("setPwError").textContent = "Please enter a password 🥺"; return; }
+  if(pw.length < 4){ $("setPwError").textContent = "Password must be at least 4 characters"; return; }
+  if(pw !== pw2){ $("setPwError").textContent = "Passwords don't match 🥺"; return; }
+
+  $("setPwSave").disabled = true;
+  $("setPwSave").textContent = "Saving...";
+
+  try{
+    const hash = await hashPassword(pw);
+    await db.collection("users").doc(currentCode).set({ passwordHash: hash }, { merge: true });
+    storedPasswordHash = hash;
+    updateSecurityUI();
+    $("setPasswordModal").classList.remove("show");
+    toast("Password saved! 🔒 Delete is now protected");
+  }catch(e){
+    console.error(e);
+    toast("Couldn't save password 😢 check your connection");
+  }
+
+  $("setPwSave").disabled = false;
+  $("setPwSave").textContent = "Save password";
+};
+
+
+$("setPwConfirmInput").onkeydown = (e) => { if(e.key === "Enter") $("setPwSave").click(); };
+
+$("securityBtn").onclick = async () => {
+
+  if(storedPasswordHash){
+    const verified = await askPassword({
+      icon: "🔑",
+      title: "Enter current password",
+      desc: "Please confirm your current password before you can change it."
+    });
+    if(!verified) return; 
+  }
+
+  openSetPasswordModal();
+};
+
+
+$("showGenerate").onclick = () => { $("authChoice").classList.add("hidden"); $("generatePanel").classList.remove("hidden"); };
+$("showEnter").onclick = () => { $("authChoice").classList.add("hidden"); $("enterPanel").classList.remove("hidden"); };
+$("backFromGenerate").onclick = () => { $("generatePanel").classList.add("hidden"); $("codeResult").classList.add("hidden"); $("authChoice").classList.remove("hidden"); };
+$("backFromEnter").onclick = () => { $("enterPanel").classList.add("hidden"); $("authChoice").classList.remove("hidden"); };
+
+$("genCodeBtn").onclick = async () => {
+  $("genCodeBtn").disabled = true;
+  $("genCodeBtn").textContent = "Generating...";
+  try{
+    const code = generateCode();
+    await db.collection("users").doc(code).set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    $("newCode").textContent = code;
+    $("codeResult").classList.remove("hidden");
+    $("genCodeBtn").classList.add("hidden");
+    currentCode = code;
+  }catch(e){
+    toast("Couldn't reach the cloud 😢 check your Firebase setup");
+    console.error(e);
+    $("genCodeBtn").disabled = false;
+    $("genCodeBtn").textContent = "Generate my code";
+  }
+};
+$("copyCodeBtn").onclick = () => {
+  navigator.clipboard.writeText($("newCode").textContent);
+  toast("Code copied! keep it safe 💗");
+};
+$("continueWithCode").onclick = () => {
+  localStorage.setItem("diaryCode", currentCode);
+  enterApp();
+};
+
+$("enterCodeBtn").onclick = async () => {
+  const code = $("enterCodeInput").value.trim().toUpperCase();
+  if(!code){ toast("Please type your code"); return; }
+  $("enterCodeBtn").disabled = true;
+  $("enterCodeBtn").textContent = "Checking...";
+  try{
+    const doc = await db.collection("users").doc(code).get();
+    if(doc.exists){
+      currentCode = code;
+      localStorage.setItem("diaryCode", code);
+      enterApp();
+    } else {
+      toast("That code wasn't found 🥺");
+    }
+  }catch(e){
+    toast("Couldn't reach the cloud 😢");
+    console.error(e);
+  }
+  $("enterCodeBtn").disabled = false;
+  $("enterCodeBtn").textContent = "Enter my diary";
+};
+
+$("logoutBtn").onclick = async () => {
+  const ok = await showConfirm({
+    icon: "🚪",
+    title: "Log out of this code?",
+    message: "Make sure you've saved your access code somewhere safe — you'll need it to log back in.",
+    okText: "Yes, log out"
+  });
+  if(!ok) return;
+
+  localStorage.removeItem("diaryCode");
+  currentCode = null;
+  $("appScreen").classList.add("hidden");
+  $("authScreen").classList.remove("hidden");
+  $("authChoice").classList.remove("hidden");
+  $("generatePanel").classList.add("hidden");
+  $("enterPanel").classList.add("hidden");
+  $("codeResult").classList.add("hidden");
+};
+
+function enterApp(){
+  $("authScreen").classList.add("hidden");
+  $("appScreen").classList.remove("hidden");
+  loadDiaries();
+  loadUserProfile();
+  loadPasswordHash();
+  startHoroscopeMidnightWatcher();
+}
+
+
+function diariesRef(){ return db.collection("users").doc(currentCode).collection("diaries"); }
+
+async function loadDiaries(){
+  $("diaryList").innerHTML = `<div class="empty-state">Loading your stories... 🌸</div>`;
+  try{
+    const snap = await diariesRef().orderBy("createdAt","desc").get();
+    allDiaries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderList(getFilteredDiaries());
+  }catch(e){
+    console.error(e);
+    $("diaryList").innerHTML = `<div class="empty-state">Couldn't load diaries 😢<br>check your Firebase setup</div>`;
+  }
+}
+
+function renderList(list){
+  const wrap = $("diaryList");
+  if(list.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><div class="big">🌷</div>No diaries yet.<br>Tap "Create Diary" to write your first story!</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(d => `
+    <div class="diary-card" data-id="${d.id}">
+      <h3>${escapeHtml(d.title)}</h3>
+      <div class="meta">${d.date} · ${d.time}</div>
+      <p class="preview">${escapeHtml(d.content)}</p>
+    </div>
+  `).join("");
+  wrap.querySelectorAll(".diary-card").forEach(card => {
+    card.onclick = () => openViewer(card.dataset.id);
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+$("searchInput").oninput = (e) => {
+  searchQuery = e.target.value.toLowerCase();
+  renderList(getFilteredDiaries());
+};
+
+
+function getDiaryDate(d){
+  if(d.createdAt && d.createdAt.toDate) return d.createdAt.toDate();
+  if(d.createdAt) return new Date(d.createdAt);
+  return null;
+}
+
+function getFilteredDiaries(){
+  let list = allDiaries;
+
+  if(selectedMonthYear){
+    const [y, m] = selectedMonthYear.split("-").map(Number);
+    list = list.filter(d => {
+      const dt = getDiaryDate(d);
+      if(!dt) return false;
+      return dt.getFullYear() === y && (dt.getMonth() + 1) === m;
+    });
+  }
+
+  if(searchQuery){
+    list = list.filter(d => (d.title||"").toLowerCase().includes(searchQuery));
+  }
+
+  return list;
+}
+
+$("selectMonthBtn").onclick = () => {
+  const input = $("monthYearInput");
+  if(input.showPicker){
+    input.showPicker();
+  } else {
+    input.focus();
+    input.click();
+  }
+};
+
+$("monthYearInput").onchange = (e) => {
+  const val = e.target.value; // "YYYY-MM"
+  if(!val) return;
+  selectedMonthYear = val;
+
+  const [y, m] = val.split("-").map(Number);
+  $("filterTitle").textContent = `${MONTH_NAMES[m-1]} ${y} Diaries`;
+  $("filterTitle").classList.remove("hidden");
+  $("clearFilterBtn").classList.remove("hidden");
+
+  renderList(getFilteredDiaries());
+};
+
+$("clearFilterBtn").onclick = () => {
+  selectedMonthYear = null;
+  $("monthYearInput").value = "";
+  $("filterTitle").classList.add("hidden");
+  $("clearFilterBtn").classList.add("hidden");
+  renderList(getFilteredDiaries());
+};
+
+
+$("createDiaryBtn").onclick = () => { $("createModal").classList.add("show"); $("diaryTitleInput").focus(); };
+$("closeCreateModal").onclick = () => $("createModal").classList.remove("show");
+
+$("saveDiaryBtn").onclick = async () => {
+  const title = $("diaryTitleInput").value.trim();
+  const content = $("diaryContentInput").value; 
+  if(!title){ toast("Please add a title"); return; }
+  if(!content.trim()){ toast("Write a little something first 🌷"); return; }
+
+  $("saveDiaryBtn").disabled = true;
+  $("saveDiaryBtn").textContent = "Saving...";
+  const now = new Date();
+  try{
+    await diariesRef().add({
+      title,
+      content,
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $("diaryTitleInput").value = "";
+    $("diaryContentInput").value = "";
+    $("createModal").classList.remove("show");
+    toast("Saved to the cloud 💗");
+    loadDiaries();
+  }catch(e){
+    console.error(e);
+    toast("Couldn't save 😢 check your connection");
+  }
+  $("saveDiaryBtn").disabled = false;
+  $("saveDiaryBtn").textContent = "💾 Save diary";
+};
+
+
+let openDiaryId = null;
+function openViewer(id){
+  const d = allDiaries.find(x => x.id === id);
+  if(!d) return;
+  openDiaryId = id;
+  $("viewTitle").textContent = d.title;
+  $("viewMeta").textContent = `${d.date} · ${d.time}`;
+  $("viewContent").textContent = d.content;
+  $("viewModal").classList.add("show");
+}
+$("closeViewModal").onclick = () => $("viewModal").classList.remove("show");
+
+$("deleteDiaryBtn").onclick = async () => {
+  if(!openDiaryId) return;
+
+
+  if(storedPasswordHash){
+    const verified = await askPassword({
+      icon: "🗑️",
+      title: "Confirm delete",
+      desc: "Enter your diary password to delete this entry. This can't be undone."
+    });
+    if(!verified) return;
+  } else {
+
+    const ok = await showConfirm({
+      icon: "🗑️",
+      title: "Delete this diary?",
+      message: "This entry will be gone for good — this can't be undone.",
+      okText: "Yes, delete"
+    });
+    if(!ok) return;
+  }
+
+  try{
+    await diariesRef().doc(openDiaryId).delete();
+    $("viewModal").classList.remove("show");
+    toast("Diary deleted 🗑");
+    loadDiaries();
+  }catch(e){
+    console.error(e);
+    toast("Couldn't delete 😢");
+  }
+};
+
+
+$("horoscopeBtn").onclick = () => openHoroscopeModal(false);
+
+$("closeHoroscopeModal").onclick = () => $("horoscopeModal").classList.remove("show");
+
+
+let deferredPrompt = null;
+const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if(!isStandalone && !sessionStorage.getItem("bannerDismissed")){
+    $("installBanner").style.display = "flex";
+  }
+});
+$("installBtn").onclick = async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $("installBanner").style.display = "none";
+};
+$("dismissBanner").onclick = () => {
+  $("installBanner").style.display = "none";
+  sessionStorage.setItem("bannerDismissed", "1");
+};
+
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(e => console.error("SW failed:", e));
+  });
+}
+
+$("themeToggleBtn").onclick = () => {
+  const isDark = document.body.classList.contains("dark-mode");
+  const newTheme = isDark ? "light" : "dark";
+  applyTheme(newTheme);
+  localStorage.setItem("diaryTheme", newTheme);
+};
+
+
+initTheme();
+if(currentCode){
+  enterApp();
+}
+</script>
+</body>
+</html>
