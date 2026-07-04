@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "diary-ni-cloie-v2";
+const CACHE_NAME = "diary-ni-cloie-v3";
 const PRECACHE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
