@@ -1,5 +1,5 @@
-// Diary ni Cloie — Service Worker (network-first strategy)
-const CACHE_NAME = "diary-ni-cloie-v1";
+
+const CACHE_NAME = "diary-ni-cloie-v2";
 const PRECACHE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -16,8 +16,7 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Network-first: always try the network so the app + diary data stay fresh.
-// Falls back to cache only when offline, so the shell still loads.
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
